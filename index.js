@@ -57,6 +57,14 @@ passport.deserializeUser((obj, done)=>{
     done(null, obj)
 });
 
+function checkLoggedIn(req, res, next){
+    const isLoggedIn = req.isAuthenticated() && req.user;
+    if(!isLoggedIn){
+        return res.status(401).json({error: 'You must login first'});
+    }
+    next();
+}
+
 app.use(helmet());
 
 app.use(passport.initialize());
@@ -70,9 +78,14 @@ app.get('/auth/google/callback', passport.authenticate('google', {
     successRedirect: '/secret'
 }));
 
-app.get('/auth/logout', (req, res)=>{});
+app.get('/auth/logout', (req, res, next)=>{
+    req.logout((err)=>{
+        if(err) return next(err);
+    }); // it will clear your cookies and session
+    return res.redirect('/');
+});
 
-app.get('/secret', (req, res)=>{
+app.get('/secret', checkLoggedIn, (req, res)=>{
     res.send('Your secret value is 9100');
 });
 
